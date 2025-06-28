@@ -184,6 +184,8 @@
   border-radius: 0;
   height: 100%!important;
   width: 100%!important;
+
+  background-size: 500px;
 }
 
 #stream__box video{
@@ -210,7 +212,16 @@
   overflow:hidden;
   height: 300px;
   width: 300px;
+
+  background-image: url("../images/defaulmg.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 300px;
+
+
 }
+
+
 .video-player{
   height: 100%;
   width: 100%;
