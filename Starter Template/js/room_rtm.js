@@ -53,12 +53,15 @@ let getMembers = async() =>{
     }
 }
 
-let handlChannelMessage = async(messageData,memberId)=>{
+let handleChannelMessage = async(messageData,memberId)=>{
     // thong bao da nhan duoc thong bao moi
     console.log('Receive a new message')
     let data = JSON.parse(messageData.text)
     if(data.type === 'chat'){
         addMessageToDom(data.displayName, data.message)
+    }
+    if(data.type === 'user-left'){
+        document.getElementById(`user-container-${data.uid}`).remove()
     }
 }
 

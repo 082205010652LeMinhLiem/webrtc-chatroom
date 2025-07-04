@@ -68,7 +68,7 @@ let joinRoomInit = async() =>{
 
     channel.on('MemberJoined',handleMemberJoined)
     channel.on('MemberLeft',handleMemberLeft)
-    channel.on('ChannelMessage',handlChannelMessage)
+    channel.on('ChannelMessage',handleChannelMessage)
 
     getMembers()
     addBotMessageToDom(`Chào mừng ${displayName} đã gia nhập vào giáo phái 🙇🙇🙇`)  
@@ -246,10 +246,44 @@ let toggleScreen = async(e) =>{
 }
 
 
+let leaveStream = async(e) =>{
+    e.preventDefault()
+
+    document.getElementById('join-btn').style.display = 'block'
+    document.getElementsByClassName('stream__actions')[0].style.display = 'none'
+
+    for(let i = 0 ; localTracks.length>i;i++){
+        localTracks[i].stop()
+        localTracks[i].close()     
+    }
+
+    await client.unpublish([localTracks[0],localTracks[1]])
+
+    if(localScreenTracks){
+        await client.unpublish([localScreenTracks])
+    }
+
+    document.getElementById(`user-container-${uid}`).remove()
+
+    if(userIdInDisplayFrame === `user-container-${uid}`){
+        displayFrame.style.display = null
+
+        for(let i = 0 ; videoFrames.length > i ; i++){
+            videoFrames[i].style.height ='300px'
+            videoFrames[i].style.width = '300px'
+        }
+    }
+    channel.sendMessage({text:JSON.stringify({
+        'type':'user-left',
+        'uid':uid
+    })})
+}
+
 document.getElementById('camera-btn').addEventListener('click',toggleCamera)
 document.getElementById('mic-btn').addEventListener('click',toggleMic)
 document.getElementById('screen-btn').addEventListener('click',toggleScreen)
 document.getElementById('join-btn').addEventListener('click',joinStream) 
+document.getElementById('leave-btn').addEventListener('click',leaveStream) 
 
 
 joinRoomInit()
