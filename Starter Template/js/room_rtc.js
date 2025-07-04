@@ -1,4 +1,5 @@
-const APP_ID = "680d10a2466d44ecbc2f69c5306dc597"
+
+const APP_ID = "948c45b360de4eddaf93090cfdf0f214"
 
 let uid = sessionStorage.getItem('uid')
 if(!uid){
@@ -7,6 +8,9 @@ if(!uid){
 }
 let token = null;
 let client;
+
+let rtmClient;
+let channel; 
 
 const queryString = window.location.search
 const urlParams = new URLSearchParams(queryString)
@@ -29,9 +33,44 @@ let localScreenTracks;
 let sharingScreen = false; 
 
 let joinRoomInit = async() =>{
-    client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-    await client.join(APP_ID,roomId,token,uid)
     
+    
+    try{
+        // yeu cau token tu server
+        const rtcResponse = await fetch(`http://localhost:8080/rtc_token?channelName=${roomId}&uid=${uid}`);
+        if(!rtcResponse.ok){
+            throw new Error(`HTTP error! status: ${rtcResponse.status}`);
+        }
+        const rtcData = await rtcResponse.json();
+        rtcToken = rtcData.rtcToken;
+        console.log("RTC Token đã nhận:", rtcToken);
+        const rtmResponse = await fetch(`http://localhost:8080/rtm_token?uid=${uid}`);
+        if(!rtmResponse.ok){
+            throw new Error(`HTTP error! status: ${rtmResponse.status}`);
+        }
+        const rtmData = await rtmResponse.json();
+        rtmToken = rtmData.rtmToken; // Lấy RTM token từ response
+        console.log("RTM Token đã nhận:", rtmToken);
+    }catch(error){
+        console.error("Không thể lấy token từ máy chủ:", error);
+        alert("Lỗi: Không thể tham gia phòng vì không lấy được token. Vui lòng kiểm tra máy chủ token.");
+        return;
+    }
+
+    rtmClient = AgoraRTM.createInstance(APP_ID)
+    channel = rtmClient.createChannel(roomId)
+    
+    await rtmClient.login({uid:uid, token: rtmToken }) // Sử dụng rtmToken ở đây!
+    console.log('RTM client logged in successfully.'); 
+    
+    await channel.join()
+
+    channel.on('MemberJoined',handleMemberJoined)
+
+    client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    await client.join(APP_ID,roomId,rtcToken,uid) // Sử dụng rtcToken ở đây!
+    console.log('Agora RTC client joined successfully.');
+
     client.on('user-published',handleUserPublished)
     client.on('user-left',handleUserLeft)
     joinStream()
@@ -196,6 +235,8 @@ let toggleScreen = async(e) =>{
         switchToCamera()
     }
 }
+
+
 
 
 
