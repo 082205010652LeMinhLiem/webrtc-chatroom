@@ -34,7 +34,6 @@ let sharingScreen = false;
 
 let joinRoomInit = async() =>{
     
-    
     try{
         // yeu cau token tu server
         const rtcResponse = await fetch(`http://localhost:8080/rtc_token?channelName=${roomId}&uid=${uid}`);
@@ -62,10 +61,15 @@ let joinRoomInit = async() =>{
     
     await rtmClient.login({uid:uid, token: rtmToken }) // Sử dụng rtmToken ở đây!
     console.log('RTM client logged in successfully.'); 
+
+    await rtmClient.addOrUpdateLocalUserAttributes({'name':displayName})
     
     await channel.join()
 
     channel.on('MemberJoined',handleMemberJoined)
+    channel.on('MemberLeft',handleMemberLeft)
+
+    getMembers()
 
     client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     await client.join(APP_ID,roomId,rtcToken,uid) // Sử dụng rtcToken ở đây!
