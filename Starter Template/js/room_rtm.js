@@ -4,6 +4,10 @@ let handleMemberJoined = async(MemberId) => {
 
     let members = await channel.getMembers()
     updateMemberTotal(members)
+    
+    let {name} = await rtmClient.getUserAttributesByKeys(MemberId, ['name'])
+    
+    addBotMessageToDom(`Chào mừng ${name} đã gia nhập vào giáo phái 🙇🙇🙇`)  
 }
 
 let addMembertoDom = async(MemberId)=>{
@@ -32,8 +36,10 @@ let handleMemberLeft = async(MemberId) => {
 
 let removeMemberFromDom = async(MemberId) => {
     let memberWrapper = document.getElementById(`member__${MemberId}_wrapper`)
+    let name = memberWrapper.getElementsByClassName('member_name')[0].textContent
     if(memberWrapper){
         memberWrapper.remove()
+        addBotMessageToDom(`${name} đã rời khỏi giáo phái 🙇🙇🙇`)
     }
 }
 
@@ -84,8 +90,29 @@ let addMessageToDom = (name, message) =>{
     if(lastMessage){
         lastMessage.scrollIntoView()
     }
+}
+
+
+let addBotMessageToDom = (botMessage) =>{
+    let messageWrapper = document.getElementById('messages')
+
+    let newMessage = `<div class="message__wrapper">
+                        <div class="message__body__bot">
+                            <strong class="message__author__bot">Slave Bot</strong>
+                            <p class="message__text__bot">${botMessage}</p>
+                        </div>
+                    </div>`
+    messageWrapper.insertAdjacentHTML('beforeend',newMessage)
+
+    let lastMessage = document.querySelector('#messages .message__wrapper:last-child')
+    if(lastMessage){
+        lastMessage.scrollIntoView()
+    }
 
 }
+
+
+
 
 let leaveChannel = async() => {
     await channel.leave()

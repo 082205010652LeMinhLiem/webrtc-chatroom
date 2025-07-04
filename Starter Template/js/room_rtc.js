@@ -71,6 +71,7 @@ let joinRoomInit = async() =>{
     channel.on('ChannelMessage',handlChannelMessage)
 
     getMembers()
+    addBotMessageToDom(`Chào mừng ${displayName} đã gia nhập vào giáo phái 🙇🙇🙇`)  
 
     client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     await client.join(APP_ID,roomId,rtcToken,uid) // Sử dụng rtcToken ở đây!
