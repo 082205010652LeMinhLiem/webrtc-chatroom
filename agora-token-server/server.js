@@ -1,7 +1,8 @@
 require('dotenv').config(); // Tải biến môi trường từ file .env
 const express = require('express');
+const path = require('path'); // <-- THÊM DÒNG NÀY
 // Đảm bảo import cả RtcTokenBuilder, RtcRole VÀ RtmTokenBuilder, RtmRole
-const { RtcTokenBuilder, RtcRole, RtmTokenBuilder , RtmRole } = require('agora-access-token');
+const { RtcTokenBuilder, RtcRole, RtmTokenBuilder, RtmRole } = require('agora-access-token');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -17,13 +18,25 @@ if (!appId || !appCertificate) {
     process.exit(1);
 }
 
+// --- PHỤC VỤ FILE FRONTEND ---
+// Dòng này sẽ phục vụ tất cả các file (HTML, CSS, JS) trong thư mục 'Starter Template'
+// __dirname trỏ đến thư mục hiện tại (agora-token-server)
+// '../Starter Template' là đường dẫn tương đối đến thư mục frontend của bạn
+app.use(express.static(path.join(__dirname, '../Starter Template')));
+
+// Route mặc định để khi người dùng truy cập vào, họ sẽ nhận được lobby.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Starter Template/lobby.html'));
+});
+// -----------------------------
+
+
 app.use(express.json()); // Để phân tích cú pháp JSON từ body request
 app.use(express.urlencoded({ extended: true })); // Để phân tích cú pháp URL-encoded data
 
 // Middleware để xử lý CORS (quan trọng cho các yêu cầu từ frontend)
 app.use((req, res, next) => {
-    // Cho phép tất cả các nguồn (chỉ dùng cho phát triển, trong sản phẩm nên chỉ định rõ nguồn gốc)
-    res.header('Access-Control-Allow-Origin', '*'); 
+    res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     if (req.method === 'OPTIONS') {
@@ -33,8 +46,8 @@ app.use((req, res, next) => {
 });
 
 // Endpoint để tạo token RTC (cho video/audio call)
-app.get('/rtc_token', (req, res) => {
-    // Lấy channelName và uid từ query parameters của request
+// ĐỔI TÊN ENDPOINT CHO RÕ RÀNG
+app.get('/token/rtc', (req, res) => {
     const channelName = req.query.channelName;
     const uid = req.query.uid;
 
@@ -45,66 +58,58 @@ app.get('/rtc_token', (req, res) => {
         return res.status(400).json({ error: 'uid là bắt buộc.' });
     }
 
-    // Thời gian hết hạn của token và đặc quyền (đơn vị giây)
     const expirationTimeInSeconds = 3600; // 1 giờ
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
-
-    // Vai trò của người dùng (PUBLISHER cho người phát và SUBSCRIBE cho người xem)
-    const role = RtcRole.PUBLISHER; // Hoặc RtcRole.SUBSCRIBER nếu chỉ xem
+    const role = RtcRole.PUBLISHER;
 
     try {
-        // Tạo token RTC
         const token = RtcTokenBuilder.buildTokenWithUid(
             appId,
             appCertificate,
             channelName,
-            parseInt(uid), // uid phải là kiểu số nguyên
+            parseInt(uid),
             role,
             privilegeExpiredTs
         );
-        
-        // Trả về token cho client
         res.json({ rtcToken: token });
     } catch (error) {
         console.error("Lỗi khi tạo token RTC:", error);
-        res.status(500).json({ error: 'Không thể tạo token RTC. Vui lòng kiểm tra App ID và App Certificate.' });
+        res.status(500).json({ error: 'Không thể tạo token RTC.' });
     }
 });
 
 // Endpoint mới để tạo token RTM (cho nhắn tin thời gian thực)
-app.get('/rtm_token', (req, res) => {
-    const userId = req.query.uid; // RTM dùng userId, nên dùng uid từ frontend
+// ĐỔI TÊN ENDPOINT CHO RÕ RÀNG
+app.get('/token/rtm', (req, res) => {
+    const userId = req.query.uid;
 
     if (!userId) {
         return res.status(400).json({ error: 'uid (userId) là bắt buộc cho RTM.' });
     }
 
-    const expirationTimeInSeconds = 3600; // 1 giờ
+    const expirationTimeInSeconds = 3600;
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
     try {
-        // Tạo token RTM
         const token = RtmTokenBuilder.buildToken(
             appId,
             appCertificate,
-            userId, // UID là string cho RTM
-            RtmRole.Rtm_User, // Vai trò cho RTM, luôn là Rtm_User
+            userId,
+            RtmRole.Rtm_User,
             privilegeExpiredTs
         );
-
         res.json({ rtmToken: token });
     } catch (error) {
         console.error("Lỗi khi tạo token RTM:", error);
-        res.status(500).json({ error: 'Không thể tạo token RTM. Vui lòng kiểm tra App ID và App Certificate.' });
+        res.status(500).json({ error: 'Không thể tạo token RTM.' });
     }
 });
 
-
-// Khởi động máy chủ
-app.listen(PORT, () => {
+// Khởi động máy chủ - SỬA LẠI DÒNG NÀY
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server đang chạy trên cổng ${PORT}`);
-    console.log(`Để tạo token RTC, truy cập: http://localhost:${PORT}/rtc_token?channelName=main&uid=1234`);
-    console.log(`Để tạo token RTM, truy cập: http://localhost:${PORT}/rtm_token?uid=1234`);
+    console.log(`Mở trình duyệt trên máy khác trong cùng mạng và truy cập vào IP của máy này.`);
+    console.log(`Ví dụ: http://192.168.1.10:${PORT}`);
 });

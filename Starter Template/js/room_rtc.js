@@ -1,14 +1,13 @@
-
-const APP_ID = "948c45b360de4eddaf93090cfdf0f214"
+const APP_ID = "30aed769d4af468b8351705359f7299c"
 
 let uid = sessionStorage.getItem('uid')
 if(!uid){
     uid = String(Math.floor(Math.random() * 10000))
     sessionStorage.setItem('uid',uid)
 }
-let token = null;
-let client;
 
+// Các biến này sẽ được khởi tạo trong joinRoomInit
+let client;
 let rtmClient;
 let channel; 
 
@@ -16,7 +15,7 @@ const queryString = window.location.search
 const urlParams = new URLSearchParams(queryString)
 let roomId = urlParams.get('room')
 
-// neu khong co phong chuyen ve main
+// nếu không có phòng, đặt mặc định là 'main'
 if(!roomId){
     roomId = 'main'
 }
@@ -33,24 +32,32 @@ let localScreenTracks;
 let sharingScreen = false; 
 
 let joinRoomInit = async() =>{
-    
+    let rtcToken;
+    let rtmToken;
+
     try{
-        // yeu cau token tu server
-        const rtcResponse = await fetch(`http://localhost:8080/rtc_token?channelName=${roomId}&uid=${uid}`);
+        // SỬA LỖI: Lấy địa chỉ server động từ URL trình duyệt
+        const serverUrl = `http://${window.location.hostname}:${window.location.port}`;
+
+        // SỬA LỖI: Yêu cầu token từ server với URL động và đúng endpoint
+        const rtcResponse = await fetch(`${serverUrl}/token/rtc?channelName=${roomId}&uid=${uid}`);
         if(!rtcResponse.ok){
             throw new Error(`HTTP error! status: ${rtcResponse.status}`);
         }
         const rtcData = await rtcResponse.json();
         rtcToken = rtcData.rtcToken;
         console.log("RTC Token đã nhận:", rtcToken);
-        const rtmResponse = await fetch(`http://localhost:8080/rtm_token?uid=${uid}`);
+
+        // SỬA LỖI: Yêu cầu RTM token với URL động và đúng endpoint
+        const rtmResponse = await fetch(`${serverUrl}/token/rtm?uid=${uid}`);
         if(!rtmResponse.ok){
             throw new Error(`HTTP error! status: ${rtmResponse.status}`);
         }
         const rtmData = await rtmResponse.json();
-        rtmToken = rtmData.rtmToken; // Lấy RTM token từ response
+        rtmToken = rtmData.rtmToken;
         console.log("RTM Token đã nhận:", rtmToken);
-    }catch(error){
+
+    } catch(error) {
         console.error("Không thể lấy token từ máy chủ:", error);
         alert("Lỗi: Không thể tham gia phòng vì không lấy được token. Vui lòng kiểm tra máy chủ token.");
         return;
@@ -71,7 +78,7 @@ let joinRoomInit = async() =>{
     channel.on('ChannelMessage',handleChannelMessage)
 
     getMembers()
-    addBotMessageToDom(`Chào mừng ${displayName} đã gia nhập vào giáo phái 🙇🙇🙇`)  
+    addBotMessageToDom(`Chào mừng ${displayName} đã gia nhập vào giáo phái 🙇🙇🙇`) 	
 
     client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     await client.join(APP_ID,roomId,rtcToken,uid) // Sử dụng rtcToken ở đây!
@@ -79,14 +86,12 @@ let joinRoomInit = async() =>{
 
     client.on('user-published',handleUserPublished)
     client.on('user-left',handleUserLeft)
-
 }
 
 
 let joinStream = async() =>{
-    
     document.getElementById('join-btn').style.display = 'none'
-    document.getElementsByClassName('stream__actions')[0].style.display = 'flex'  
+    document.getElementsByClassName('stream__actions')[0].style.display = 'flex' 	
     localTracks = await AgoraRTC.createMicrophoneAndCameraTracks({
     video: {
         encoderConfig: {
@@ -105,13 +110,12 @@ let joinStream = async() =>{
     localTracks[1].play(`user-${uid}`)
 
     await client.publish([localTracks[0],localTracks[1]])
-
 }
 
 let switchToCamera = async() =>{
-    player = `<div class="video__container" id="user-container-${uid}">
+    let player = `<div class="video__container" id="user-container-${uid}">
                         <div class= "video-player" id = "user-${uid}"></div>
-            </div>`
+                </div>`
     displayFrame.insertAdjacentHTML('beforeend', player);
 
     await localTracks[0].setMuted(true)
@@ -126,7 +130,6 @@ let switchToCamera = async() =>{
 
 
 let handleUserPublished = async(user,mediaType) =>{
-    
     remoteUsers[user.uid] = user
 
     await client.subscribe(user,mediaType)
@@ -222,7 +225,7 @@ let toggleScreen = async(e) =>{
         userIdInDisplayFrame = `user-container-${uid}`
         localScreenTracks.play(`user-${uid}`)
 
-        await client.unpublish([localScreenTracks[1]])
+        await client.unpublish([localTracks[1]]) // unpublish camera track
         await client.publish([localScreenTracks])
 
         let videoFrames = document.getElementsByClassName('video__container')
@@ -233,7 +236,7 @@ let toggleScreen = async(e) =>{
             videoFrames[i].style.width = '100px'
         }
     
-  }
+    }
 
     }else{
         sharingScreen = false
@@ -254,7 +257,7 @@ let leaveStream = async(e) =>{
 
     for(let i = 0 ; localTracks.length>i;i++){
         localTracks[i].stop()
-        localTracks[i].close()     
+        localTracks[i].close() 	 
     }
 
     await client.unpublish([localTracks[0],localTracks[1]])
@@ -268,6 +271,7 @@ let leaveStream = async(e) =>{
     if(userIdInDisplayFrame === `user-container-${uid}`){
         displayFrame.style.display = null
 
+        let videoFrames = document.getElementsByClassName('video__container')
         for(let i = 0 ; videoFrames.length > i ; i++){
             videoFrames[i].style.height ='300px'
             videoFrames[i].style.width = '300px'
