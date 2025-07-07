@@ -37,7 +37,7 @@ let joinRoomInit = async () => {
 
     try {
         // Đổi từ hostname sang domain thật
-        const serverUrl = "https://webrtc-chatroom.onrender.com";
+        const serverUrl = window.location.origin;
 
         // Lấy RTC token
         const rtcResponse = await fetch(`${serverUrl}/token/rtc?channelName=${roomId}&uid=${uid}`);
