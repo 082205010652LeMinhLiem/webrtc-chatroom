@@ -31,33 +31,32 @@ let remoteUsers = {};
 let localScreenTracks;
 let sharingScreen = false; 
 
-let joinRoomInit = async() =>{
+let joinRoomInit = async () => {
     let rtcToken;
     let rtmToken;
 
-    try{
-        // SỬA LỖI: Lấy địa chỉ server động từ URL trình duyệt
-        const serverUrl = `http://${window.location.hostname}:${window.location.port}`;
+    try {
+        // Đổi từ hostname sang domain thật
+        const serverUrl = "https://webrtc-chatroom.onrender.com";
 
-        // SỬA LỖI: Yêu cầu token từ server với URL động và đúng endpoint
+        // Lấy RTC token
         const rtcResponse = await fetch(`${serverUrl}/token/rtc?channelName=${roomId}&uid=${uid}`);
-        if(!rtcResponse.ok){
+        if (!rtcResponse.ok) {
             throw new Error(`HTTP error! status: ${rtcResponse.status}`);
         }
         const rtcData = await rtcResponse.json();
         rtcToken = rtcData.rtcToken;
         console.log("RTC Token đã nhận:", rtcToken);
 
-        // SỬA LỖI: Yêu cầu RTM token với URL động và đúng endpoint
+        // Lấy RTM token
         const rtmResponse = await fetch(`${serverUrl}/token/rtm?uid=${uid}`);
-        if(!rtmResponse.ok){
+        if (!rtmResponse.ok) {
             throw new Error(`HTTP error! status: ${rtmResponse.status}`);
         }
         const rtmData = await rtmResponse.json();
         rtmToken = rtmData.rtmToken;
         console.log("RTM Token đã nhận:", rtmToken);
-
-    } catch(error) {
+    } catch (error) {
         console.error("Không thể lấy token từ máy chủ:", error);
         alert("Lỗi: Không thể tham gia phòng vì không lấy được token. Vui lòng kiểm tra máy chủ token.");
         return;
