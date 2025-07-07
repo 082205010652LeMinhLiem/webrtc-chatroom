@@ -36,10 +36,10 @@ let joinRoomInit = async () => {
     let rtmToken;
 
     try {
-        // Đổi từ hostname sang domain thật
-        const serverUrl = window.location.origin.replace('http:', 'https:');
+        // ✅ Dùng domain HTTPS cố định để tránh Mixed Content
+        const serverUrl = 'https://webrtc-chatroom.onrender.com';
 
-        // Lấy RTC token
+        // ✅ Gọi API lấy RTC token
         const rtcResponse = await fetch(`${serverUrl}/token/rtc?channelName=${roomId}&uid=${uid}`);
         if (!rtcResponse.ok) {
             throw new Error(`HTTP error! status: ${rtcResponse.status}`);
@@ -48,7 +48,7 @@ let joinRoomInit = async () => {
         rtcToken = rtcData.rtcToken;
         console.log("RTC Token đã nhận:", rtcToken);
 
-        // Lấy RTM token
+        // ✅ Gọi API lấy RTM token
         const rtmResponse = await fetch(`${serverUrl}/token/rtm?uid=${uid}`);
         if (!rtmResponse.ok) {
             throw new Error(`HTTP error! status: ${rtmResponse.status}`);
