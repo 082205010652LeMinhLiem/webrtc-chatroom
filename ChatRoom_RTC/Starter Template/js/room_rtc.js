@@ -37,7 +37,7 @@ let joinRoomInit = async () => {
 
     try {
         // Đổi từ hostname sang domain thật
-        const serverUrl = window.location.origin;
+        const serverUrl = window.location.origin.replace('http:', 'https:');
 
         // Lấy RTC token
         const rtcResponse = await fetch(`${serverUrl}/token/rtc?channelName=${roomId}&uid=${uid}`);
