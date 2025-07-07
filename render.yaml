@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: webrtc-chatroom
+    env: node
+    plan: free
+    rootDir: ChatRoom_RTC/agora-token-server
+    startCommand: node server.js
